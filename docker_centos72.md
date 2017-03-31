@@ -25,3 +25,19 @@ Mar 27 22:03:52 dataplatform-gulfstream-offline03.xg01 systemd[1]: docker.servic
 
 ## solution:
 https://github.com/docker/libnetwork/issues/892
+
+We had a similar issue on a centos like system Scientific Linux release 7.2, with disable_ipv6=1 and using iptables instead of firewalld. The docker0 interface was left behind, and the service failed to start with a docker0 has no ipv4 addresses error.
+
+Docker version 1.10.3
+
+I added a systemd override file to manually clean up the "orphaned" docker0 interface whenever the service is stopped or fails to start.
+
+Add an override file (or configure the ExecStopPost command elsewhere) /etc/systemd/system/docker.service.d/cleanup_docker0_bridge.conf:
+
+[Service]
+ExecStopPost=/bin/bash -c "/sbin/ip link show docker0 && /sbin/ip link delete docker0"
+Then update systemd with:
+
+/usr/bin/systemctl daemon-reload
+
+thanks
